@@ -1,5 +1,5 @@
 import express from "express"
-import nodemailer from "nodemailer"
+import axios from "axios"
 
 const router = express.Router()
 
@@ -14,39 +14,35 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    // transporter
-    const transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST || "smtp.gmail.com",
-      port: process.env.MAIL_PORT ? Number(process.env.MAIL_PORT) : 587,
-      secure: false, // true pouze pro port 465
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
+    await axios.post(
+      "https://api.emailjs.com/api/v1.0/email/send",
+      {
+        service_id: process.env.EMAILJS_SERVICE_ID,
+        template_id: process.env.EMAILJS_TEMPLATE_ID,
+        user_id: process.env.EMAILJS_PUBLIC_KEY,
+        accessToken: process.env.EMAILJS_PRIVATE_KEY,
+        template_params: {
+          name,
+          email,
+          phone: phone || "-",
+          shoot_type: shootType,
+          message: message || "-",
+        },
       },
-    })
-
-    // email
-    await transporter.sendMail({
-      from: `"Kontakt z webu" <${process.env.MAIL_USER}>`,
-      to: process.env.MAIL_TO || process.env.MAIL_USER,
-      replyTo: email,
-      subject: "Nová zpráva z kontaktního formuláře",
-      html: `
-        <div style="font-family: Arial, sans-serif;">
-          <h2>Nová zpráva z webu</h2>
-          <p><strong>Jméno:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Telefon:</strong> ${phone || "-"}</p>
-          <p><strong>Typ focení:</strong> ${shootType}</p>
-          <p><strong>Zpráva:</strong></p>
-          <p>${message || "-"}</p>
-        </div>
-      `,
-    })
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
 
     res.json({ success: true })
   } catch (err) {
-    console.error("Nodemailer error:", err)
+    console.error(
+      "EmailJS error:",
+      err.response?.data || err.message
+    )
+
     res.status(500).json({
       error: "Failed to send email",
     })
