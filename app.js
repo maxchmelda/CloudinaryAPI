@@ -14,7 +14,7 @@ app.get("/", (req, res) => {
   res.send("API běží");
 });
 
-app.use("/collections", collectionsRoute);
+app.use("/albums", collectionsRoute);
 
 app.use("/slider", sliderRoute);
 
